@@ -30,7 +30,7 @@ main =
 type State
     = Failure
     | Loading
-    | Success (List MyRecord)
+    | Success (List Board)
 
 
 type alias Model =
@@ -48,10 +48,11 @@ init _ =
 
 type Msg
     = LoadBoards
-    | GotBoards (Result Http.Error (List MyRecord))
+    | GotBoards (Result Http.Error (List Board))
     | ChangedTitle String
     | SubmitForm
     | GotAnswer (Result Http.Error String)
+    | DelBoard Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -81,6 +82,9 @@ update msg model =
 
                 Err _ ->
                     ( { model | answer = "Failure" }, Cmd.none )
+
+        DelBoard id ->
+            ( model, delBoard id )
 
 
 
@@ -114,9 +118,12 @@ renderBoard title =
     p [] [ text title ]
 
 
-renderItem : MyRecord -> Html Msg
+renderItem : Board -> Html Msg
 renderItem rec =
-    p [] [ text (String.fromInt rec.id ++ " " ++ rec.title) ]
+    div []
+        [ p [] [ text (String.fromInt rec.id ++ " " ++ rec.title) ]
+        , button [ onClick (DelBoard rec.id) ] [ text "DEL" ]
+        ]
 
 
 viewBoards : Model -> Html Msg
@@ -142,25 +149,25 @@ viewBoards model =
 -- HTTP
 
 
-type alias MyRecord =
+type alias Board =
     { id : Int
     , title : String
     }
 
 
-recordDecoder : Decoder MyRecord
+recordDecoder : Decoder Board
 recordDecoder =
-    Json.Decode.map2 MyRecord
+    Json.Decode.map2 Board
         (field "id" Json.Decode.int)
         (field "title" Json.Decode.string)
 
 
-recordListDecoder : Decoder (List MyRecord)
+recordListDecoder : Decoder (List Board)
 recordListDecoder =
     Json.Decode.list recordDecoder
 
 
-recordsDecoder : Decoder (List MyRecord)
+recordsDecoder : Decoder (List Board)
 recordsDecoder =
     field "boards" recordListDecoder
 
@@ -205,3 +212,16 @@ bodyVal title =
     Json.Encode.object
         [ ( "title", Json.Encode.string title )
         ]
+
+
+delBoard : Int -> Cmd Msg
+delBoard id =
+    Http.request
+        { method = "DELETE"
+        , url = "https://trello-back.shpp.me/asadov/api/v1/board/" ++ String.fromInt id ++ "/"
+        , expect = Http.expectJson GotAnswer answerDecoder
+        , timeout = Nothing
+        , tracker = Nothing
+        , body = Http.emptyBody
+        , headers = [ Http.header "Authorization" "Bearer 123" ]
+        }

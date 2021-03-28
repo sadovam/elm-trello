@@ -5959,7 +5959,7 @@ var $elm$http$Http$Header = F2(
 var $elm$http$Http$header = $elm$http$Http$Header;
 var $elm$json$Json$Decode$field = _Json_decodeField;
 var $elm$json$Json$Decode$list = _Json_decodeList;
-var $author$project$Main$MyRecord = F2(
+var $author$project$Main$Board = F2(
 	function (id, title) {
 		return {id: id, title: title};
 	});
@@ -5967,7 +5967,7 @@ var $elm$json$Json$Decode$int = _Json_decodeInt;
 var $elm$json$Json$Decode$string = _Json_decodeString;
 var $author$project$Main$recordDecoder = A3(
 	$elm$json$Json$Decode$map2,
-	$author$project$Main$MyRecord,
+	$author$project$Main$Board,
 	A2($elm$json$Json$Decode$field, 'id', $elm$json$Json$Decode$int),
 	A2($elm$json$Json$Decode$field, 'title', $elm$json$Json$Decode$string));
 var $author$project$Main$recordListDecoder = $elm$json$Json$Decode$list($author$project$Main$recordDecoder);
@@ -6167,12 +6167,27 @@ var $author$project$Main$Failure = {$: 'Failure'};
 var $author$project$Main$Success = function (a) {
 	return {$: 'Success', a: a};
 };
-var $elm$core$Platform$Cmd$batch = _Platform_batch;
-var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Main$GotAnswer = function (a) {
 	return {$: 'GotAnswer', a: a};
 };
 var $author$project$Main$answerDecoder = A2($elm$json$Json$Decode$field, 'result', $elm$json$Json$Decode$string);
+var $author$project$Main$delBoard = function (id) {
+	return $elm$http$Http$request(
+		{
+			body: $elm$http$Http$emptyBody,
+			expect: A2($elm$http$Http$expectJson, $author$project$Main$GotAnswer, $author$project$Main$answerDecoder),
+			headers: _List_fromArray(
+				[
+					A2($elm$http$Http$header, 'Authorization', 'Bearer 123')
+				]),
+			method: 'DELETE',
+			timeout: $elm$core$Maybe$Nothing,
+			tracker: $elm$core$Maybe$Nothing,
+			url: 'https://trello-back.shpp.me/asadov/api/v1/board/' + ($elm$core$String$fromInt(id) + '/')
+		});
+};
+var $elm$core$Platform$Cmd$batch = _Platform_batch;
+var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $elm$json$Json$Encode$object = function (pairs) {
 	return _Json_wrap(
 		A3(
@@ -6261,7 +6276,7 @@ var $author$project$Main$update = F2(
 							newTitle: ''
 						}),
 					$author$project$Main$postBoard(model.newTitle));
-			default:
+			case 'GotAnswer':
 				var result = msg.a;
 				if (result.$ === 'Ok') {
 					var answer = result.a;
@@ -6277,6 +6292,11 @@ var $author$project$Main$update = F2(
 							{answer: 'Failure'}),
 						$elm$core$Platform$Cmd$none);
 				}
+			default:
+				var id = msg.a;
+				return _Utils_Tuple2(
+					model,
+					$author$project$Main$delBoard(id));
 		}
 	});
 var $author$project$Main$ChangedTitle = function (a) {
@@ -6357,14 +6377,34 @@ var $author$project$Main$renderBoard = function (title) {
 };
 var $elm$html$Html$Attributes$value = $elm$html$Html$Attributes$stringProperty('value');
 var $author$project$Main$LoadBoards = {$: 'LoadBoards'};
+var $author$project$Main$DelBoard = function (a) {
+	return {$: 'DelBoard', a: a};
+};
 var $author$project$Main$renderItem = function (rec) {
 	return A2(
-		$elm$html$Html$p,
+		$elm$html$Html$div,
 		_List_Nil,
 		_List_fromArray(
 			[
-				$elm$html$Html$text(
-				$elm$core$String$fromInt(rec.id) + (' ' + rec.title))
+				A2(
+				$elm$html$Html$p,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$elm$core$String$fromInt(rec.id) + (' ' + rec.title))
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Events$onClick(
+						$author$project$Main$DelBoard(rec.id))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('DEL')
+					]))
 			]));
 };
 var $elm$virtual_dom$VirtualDom$style = _VirtualDom_style;
